@@ -4,7 +4,7 @@
   <groupId>com.cloudera.crunch</groupId>
   <artifactId>crunch</artifactId>
   <packaging>jar</packaging>
-  <version>0.2.0</version>
+  <version>0.2.1-px</version>
   <name>crunch</name>
 
   <dependencies>
@@ -16,15 +16,28 @@
 
     <dependency>
       <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-core</artifactId>
-      <version>0.20.2-cdh3u1</version>
+      <artifactId>hadoop-common</artifactId>
+      <version>0.23.0-cdh4b1</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-mapreduce-client-app</artifactId>
+      <version>0.23.0-cdh4b1</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.avro</groupId>
       <artifactId>avro-mapred</artifactId>
-      <version>1.6.0</version>
+      <version>1.6.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.avro</groupId>
+      <artifactId>avro</artifactId>
+      <version>1.6.1</version>
     </dependency>
 
     <dependency>
@@ -52,12 +65,14 @@
       <scope>test</scope>
     </dependency>
 
+<!--
     <dependency>
      <groupId>org.apache.hadoop</groupId>
      <artifactId>hadoop-test</artifactId>
-     <version>0.20.2-cdh3u1</version>
+     <version>0.23.0-cdh4b1</version>
      <scope>test</scope>
     </dependency>
+-->
 
     <dependency>
       <groupId>org.hamcrest</groupId>
@@ -71,7 +86,7 @@
       <artifactId>commons-logging</artifactId>
       <version>1.1.1</version>
     </dependency>
-   
+
     <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
@@ -105,7 +120,7 @@
     <dependency>
       <groupId>org.apache.hbase</groupId>
       <artifactId>hbase</artifactId>
-      <version>0.90.3-cdh3u1</version>
+      <version>0.92.0-cdh4b1</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -138,7 +153,7 @@
     <dependency>
       <groupId>org.apache.hbase</groupId>
       <artifactId>hbase</artifactId>
-      <version>0.90.3-cdh3u1</version>
+      <version>0.92.0-cdh4b1</version>
       <type>test-jar</type>
       <scope>test</scope>
       <exclusions>

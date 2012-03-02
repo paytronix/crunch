@@ -1,5 +1,7 @@
 package com.cloudera.crunch.io;
 
+import java.io.IOException;
+
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.OutputFormat;
@@ -14,12 +16,12 @@ public abstract class PathTargetImpl implements PathTarget {
   private final Class<OutputFormat> outputFormatClass;
   private final Class keyClass;
   private final Class valueClass;
-  
+
   public PathTargetImpl(String path, Class<OutputFormat> outputFormatClass,
 	  Class keyClass, Class valueClass) {
 	this(new Path(path), outputFormatClass, keyClass, valueClass);
   }
-  
+
   public PathTargetImpl(Path path, Class<OutputFormat> outputFormatClass,
 	  Class keyClass, Class valueClass) {
 	this.path = path;
@@ -27,11 +29,15 @@ public abstract class PathTargetImpl implements PathTarget {
 	this.keyClass = keyClass;
 	this.valueClass = valueClass;
   }
-  
+
   @Override
   public void configureForMapReduce(Job job, PType<?> ptype, Path outputPath,
 	  String name) {
-    FileOutputFormat.setOutputPath(job, path);
+    try {
+      FileOutputFormat.setOutputPath(job, outputPath);
+    } catch (IOException e) {
+      throw new RuntimeException("failed to set output path to " + outputPath, e);
+    }
     if (name == null) {
       job.setOutputFormatClass(outputFormatClass);
       job.setOutputKeyClass(keyClass);

@@ -14,6 +14,8 @@
  */
 package com.cloudera.crunch.io.impl;
 
+import java.io.IOException;
+
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Job;
@@ -30,12 +32,12 @@ public class FileTargetImpl implements PathTarget {
 
   protected final Path path;
   private final Class<? extends FileOutputFormat> outputFormatClass;
-  
+
   public FileTargetImpl(Path path, Class<? extends FileOutputFormat> outputFormatClass) {
 	this.path = path;
 	this.outputFormatClass = outputFormatClass;
   }
-  
+
   @Override
   public void configureForMapReduce(Job job, PType<?> ptype, Path outputPath,
 	  String name) {
@@ -47,7 +49,11 @@ public class FileTargetImpl implements PathTarget {
 
   protected void configureForMapReduce(Job job, Class keyClass, Class valueClass,
 	  Path outputPath, String name) {
-    FileOutputFormat.setOutputPath(job, outputPath);
+    try {
+      FileOutputFormat.setOutputPath(job, outputPath);
+    } catch (IOException e) {
+      throw new RuntimeException("failed to set output path to " + outputPath, e);
+    }
     if (name == null) {
       job.setOutputFormatClass(outputFormatClass);
       job.setOutputKeyClass(keyClass);
@@ -55,20 +61,20 @@ public class FileTargetImpl implements PathTarget {
     } else {
       CrunchMultipleOutputs.addNamedOutput(job, name, outputFormatClass,
           keyClass, valueClass);
-    }	
+    }
   }
-  
+
   @Override
   public boolean accept(OutputHandler handler, PType<?> ptype) {
     handler.configure(this, ptype);
     return true;
   }
-  
+
   @Override
   public Path getPath() {
 	return path;
   }
-  
+
   @Override
   public boolean equals(Object other) {
     if (other == null || !getClass().equals(other.getClass())) {
@@ -77,12 +83,12 @@ public class FileTargetImpl implements PathTarget {
     FileTargetImpl o = (FileTargetImpl) other;
     return path.equals(o.path);
   }
-  
+
   @Override
   public int hashCode() {
     return new HashCodeBuilder().append(path).toHashCode();
   }
-  
+
   @Override
   public String toString() {
 	return new StringBuilder().append(outputFormatClass.getSimpleName())

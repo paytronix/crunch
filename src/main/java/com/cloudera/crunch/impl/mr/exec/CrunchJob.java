@@ -33,23 +33,23 @@ import com.google.common.collect.Lists;
 public class CrunchJob extends ControlledJob {
 
   private final Log log = LogFactory.getLog(CrunchJob.class);
-  
+
   private final Path workingPath;
   private final List<Path> multiPaths;
   private final boolean mapOnlyJob;
-  
+
   public CrunchJob(Job job, Path workingPath, MSCROutputHandler handler) throws IOException {
     super(job, Lists.<ControlledJob>newArrayList());
     this.workingPath = workingPath;
     this.multiPaths = handler.getMultiPaths();
     this.mapOnlyJob = handler.isMapOnlyJob();
-  }  
-  
+  }
+
   private synchronized void handleMultiPaths() throws IOException {
     if (!multiPaths.isEmpty()) {
       // Need to handle moving the data from the output directory of the
       // job to the output locations specified in the paths.
-      FileSystem fs = FileSystem.get(job.getConfiguration());
+      FileSystem fs = FileSystem.get(getJob().getConfiguration());
       for (int i = 0; i < multiPaths.size(); i++) {
         Path src = new Path(workingPath,
             PlanningParameters.MULTI_OUTPUT_PREFIX + i + "-*");
@@ -65,7 +65,7 @@ public class CrunchJob extends ControlledJob {
       }
     }
   }
-  
+
   private Path getDestFile(Path src, Path dir, int index) {
     String form = "part-%s-%05d";
     if (src.getName().endsWith(org.apache.avro.mapred.AvroOutputFormat.EXT)) {
@@ -73,30 +73,30 @@ public class CrunchJob extends ControlledJob {
     }
     return new Path(dir, String.format(form, mapOnlyJob ? "m" : "r", index));
   }
-  
+
   private int getMinPartIndex(Path path, FileSystem fs) throws IOException {
     // Quick and dirty way to ensure unique naming in the directory
     return fs.listStatus(path).length;
   }
-  
+
   @Override
   protected void checkRunningState() throws IOException, InterruptedException {
     try {
-      if (job.isComplete()) {
-        if (job.isSuccessful()) {
+      if (getJob().isComplete()) {
+        if (getJob().isSuccessful()) {
           handleMultiPaths();
-          this.state = State.SUCCESS;
+          setJobState(State.SUCCESS);
         } else {
-          this.state = State.FAILED;
+          setJobState(State.FAILED);
           this.message = "Job failed!";
         }
       }
     } catch (IOException ioe) {
-      this.state = State.FAILED;
+      setJobState(State.FAILED);
       this.message = StringUtils.stringifyException(ioe);
       try {
-        if (job != null) {
-          job.killJob();
+        if (getJob() != null) {
+          getJob().killJob();
         }
       } catch (IOException e) {
       }
@@ -106,9 +106,9 @@ public class CrunchJob extends ControlledJob {
   @Override
   protected synchronized void submit() {
     super.submit();
-    if (this.state == State.RUNNING) {
+    if (getJobState() == State.RUNNING) {
       log.info("Running job \"" + getJobName() + "\"");
-      log.info("Job status available at: " + job.getTrackingURL());
+      log.info("Job status available at: " + getJob().getTrackingURL());
     } else {
       log.info("Error occurred starting job \"" + getJobName() + "\":");
       log.info(getMessage());

@@ -21,33 +21,34 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.apache.hadoop.util.ReflectionUtils;
 
 import java.io.IOException;
 import java.util.*;
 
 /**
- * The MultipleOutputs class simplifies writing output data 
+ * The MultipleOutputs class simplifies writing output data
  * to multiple outputs
- * 
- * <p> 
+ *
+ * <p>
  * Case one: writing to additional outputs other than the job default output.
  *
  * Each additional output, or named output, may be configured with its own
  * <code>OutputFormat</code>, with its own key class and with its own value
  * class.
- * 
+ *
  * <p>
  * Case two: to write data to different files provided by user
  * </p>
- * 
+ *
  * <p>
- * MultipleOutputs supports counters, by default they are disabled. The 
- * counters group is the {@link CrunchMultipleOutputs} class name. The names of the 
- * counters are the same as the output name. These count the number records 
+ * MultipleOutputs supports counters, by default they are disabled. The
+ * counters group is the {@link CrunchMultipleOutputs} class name. The names of the
+ * counters are the same as the output name. These count the number records
  * written to each output name.
  * </p>
- * 
+ *
  * Usage pattern for job submission:
  * <pre>
  *
@@ -79,7 +80,7 @@ import java.util.*;
  * <K, V> String generateFileName(K k, V v) {
  *   return k.toString() + "_" + v.toString();
  * }
- * 
+ *
  * public class MOReduce extends
  *   Reducer&lt;WritableComparable, Writable,WritableComparable, Writable&gt; {
  * private MultipleOutputs mos;
@@ -111,20 +112,20 @@ public class CrunchMultipleOutputs<KEYOUT, VALUEOUT> {
 
   private static final String MULTIPLE_OUTPUTS = "mapreduce.multipleoutputs";
 
-  private static final String MO_PREFIX = 
+  private static final String MO_PREFIX =
     "mapreduce.multipleoutputs.namedOutput.";
 
   private static final String FORMAT = ".format";
   private static final String KEY = ".key";
   private static final String VALUE = ".value";
-  private static final String COUNTERS_ENABLED = 
+  private static final String COUNTERS_ENABLED =
     "mapreduce.multipleoutputs.counters";
 
   /**
    * Counters group used by the counters of MultipleOutputs.
    */
   private static final String COUNTERS_GROUP = CrunchMultipleOutputs.class.getName();
-  
+
   /**
    * Cache for the taskContexts
    */
@@ -168,7 +169,7 @@ public class CrunchMultipleOutputs<KEYOUT, VALUEOUT> {
       throw new IllegalArgumentException("output name cannot be 'part'");
     }
   }
-  
+
   /**
    * Checks if a named output name is valid.
    *
@@ -251,7 +252,7 @@ public class CrunchMultipleOutputs<KEYOUT, VALUEOUT> {
 
   /**
    * Enables or disables counters for the named outputs.
-   * 
+   *
    * The counters group is the {@link CrunchMultipleOutputs} class name.
    * The names of the counters are the same as the named outputs. These
    * counters count the number records written to each output name.
@@ -268,7 +269,7 @@ public class CrunchMultipleOutputs<KEYOUT, VALUEOUT> {
    * Returns if the counters for the named outputs are enabled or not.
    * By default these counters are disabled.
    *
-   * @param job    the job 
+   * @param job    the job
    * @return TRUE if the counters are enabled, FALSE if they are disabled.
    */
   public static boolean getCountersEnabled(JobContext job) {
@@ -276,7 +277,7 @@ public class CrunchMultipleOutputs<KEYOUT, VALUEOUT> {
   }
 
   /**
-   * Wraps RecordWriter to increment counters. 
+   * Wraps RecordWriter to increment counters.
    */
   @SuppressWarnings("unchecked")
   private static class RecordWriterWithCounter extends RecordWriter {
@@ -292,13 +293,13 @@ public class CrunchMultipleOutputs<KEYOUT, VALUEOUT> {
     }
 
     @SuppressWarnings({"unchecked"})
-    public void write(Object key, Object value) 
+    public void write(Object key, Object value)
         throws IOException, InterruptedException {
       context.getCounter(COUNTERS_GROUP, counterName).increment(1);
       writer.write(key, value);
     }
 
-    public void close(TaskAttemptContext context) 
+    public void close(TaskAttemptContext context)
         throws IOException, InterruptedException {
       writer.close(context);
     }
@@ -310,7 +311,7 @@ public class CrunchMultipleOutputs<KEYOUT, VALUEOUT> {
   private Set<String> namedOutputs;
   private Map<String, RecordWriter<?, ?>> recordWriters;
   private boolean countersEnabled;
-  
+
   /**
    * Creates and initializes multiple outputs support,
    * it should be instantiated in the Mapper/Reducer setup method.
@@ -331,7 +332,7 @@ public class CrunchMultipleOutputs<KEYOUT, VALUEOUT> {
    *
    * Output path is a unique file generated for the namedOutput.
    * For example, {namedOutput}-(m|r)-{part-number}
-   * 
+   *
    * @param namedOutput the named output name
    * @param key         the key
    * @param value       the value
@@ -344,7 +345,7 @@ public class CrunchMultipleOutputs<KEYOUT, VALUEOUT> {
 
   /**
    * Write key and value to baseOutputPath using the namedOutput.
-   * 
+   *
    * @param namedOutput    the named output name
    * @param key            the key
    * @param value          the value
@@ -366,20 +367,20 @@ public class CrunchMultipleOutputs<KEYOUT, VALUEOUT> {
 
   /**
    * Write key value to an output file name.
-   * 
-   * Gets the record writer from job's output format.  
+   *
+   * Gets the record writer from job's output format.
    * Job's output format should be a FileOutputFormat.
-   * 
+   *
    * @param key       the key
    * @param value     the value
    * @param baseOutputPath base-output path to write the record to.
    * Note: Framework will generate unique filename for the baseOutputPath
    */
   @SuppressWarnings("unchecked")
-  public void write(KEYOUT key, VALUEOUT value, String baseOutputPath) 
+  public void write(KEYOUT key, VALUEOUT value, String baseOutputPath)
       throws IOException, InterruptedException {
     checkBaseOutputPath(baseOutputPath);
-    TaskAttemptContext taskContext = new TaskAttemptContext(
+    TaskAttemptContext taskContext = new TaskAttemptContextImpl(
       context.getConfiguration(), context.getTaskAttemptID());
     getRecordWriter(taskContext, baseOutputPath).write(key, value);
   }
@@ -388,12 +389,12 @@ public class CrunchMultipleOutputs<KEYOUT, VALUEOUT> {
   // MultithreadedMapper.
   @SuppressWarnings("unchecked")
   private synchronized RecordWriter getRecordWriter(
-      TaskAttemptContext taskContext, String baseFileName) 
+      TaskAttemptContext taskContext, String baseFileName)
       throws IOException, InterruptedException {
-    
+
     // look for record-writer in the cache
     RecordWriter writer = recordWriters.get(baseFileName);
-    
+
     // If not in cache, create a new one
     if (writer == null) {
       // get the record writer from context output format
@@ -405,20 +406,20 @@ public class CrunchMultipleOutputs<KEYOUT, VALUEOUT> {
       } catch (ClassNotFoundException e) {
         throw new IOException(e);
       }
- 
-      // if counters are enabled, wrap the writer with context 
-      // to increment counters 
+
+      // if counters are enabled, wrap the writer with context
+      // to increment counters
       if (countersEnabled) {
         writer = new RecordWriterWithCounter(writer, baseFileName, context);
       }
-      
+
       // add the record-writer to the cache
       recordWriters.put(baseFileName, writer);
     }
     return writer;
   }
 
-   // Create a taskAttemptContext for the named output with 
+   // Create a taskAttemptContext for the named output with
    // output format and output key/value types put in the context
   private TaskAttemptContext getContext(String nameOutput) throws IOException {
 
@@ -435,21 +436,21 @@ public class CrunchMultipleOutputs<KEYOUT, VALUEOUT> {
     job.setOutputFormatClass(getNamedOutputFormatClass(context, nameOutput));
     job.setOutputKeyClass(getNamedOutputKeyClass(context, nameOutput));
     job.setOutputValueClass(getNamedOutputValueClass(context, nameOutput));
-    taskContext = new TaskAttemptContext(
+    taskContext = new TaskAttemptContextImpl(
       job.getConfiguration(), context.getTaskAttemptID());
-    
+
     taskContexts.put(nameOutput, taskContext);
-    
+
     return taskContext;
   }
-  
+
   /**
    * Closes all the opened outputs.
-   * 
+   *
    * This should be called from cleanup method of map/reduce task.
    * If overridden subclasses must invoke <code>super.close()</code> at the
    * end of their <code>close()</code>
-   * 
+   *
    */
   @SuppressWarnings("unchecked")
   public void close() throws IOException, InterruptedException {
