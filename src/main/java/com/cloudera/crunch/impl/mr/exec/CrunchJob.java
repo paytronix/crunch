@@ -14,6 +14,7 @@
  */
 package com.cloudera.crunch.impl.mr.exec;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
@@ -45,7 +46,7 @@ public class CrunchJob extends ControlledJob {
     this.mapOnlyJob = handler.isMapOnlyJob();
   }
 
-  private synchronized void handleMultiPaths() throws IOException {
+  public synchronized void handleMultiPaths() throws IOException {
     if (!multiPaths.isEmpty()) {
       // Need to handle moving the data from the output directory of the
       // job to the output locations specified in the paths.
@@ -76,30 +77,10 @@ public class CrunchJob extends ControlledJob {
 
   private int getMinPartIndex(Path path, FileSystem fs) throws IOException {
     // Quick and dirty way to ensure unique naming in the directory
-    return fs.listStatus(path).length;
-  }
-
-  @Override
-  protected void checkRunningState() throws IOException, InterruptedException {
     try {
-      if (getJob().isComplete()) {
-        if (getJob().isSuccessful()) {
-          handleMultiPaths();
-          setJobState(State.SUCCESS);
-        } else {
-          setJobState(State.FAILED);
-          this.message = "Job failed!";
-        }
-      }
-    } catch (IOException ioe) {
-      setJobState(State.FAILED);
-      this.message = StringUtils.stringifyException(ioe);
-      try {
-        if (getJob() != null) {
-          getJob().killJob();
-        }
-      } catch (IOException e) {
-      }
+      return fs.listStatus(path).length;
+    } catch (FileNotFoundException fnfe) {
+      return 0;
     }
   }
 

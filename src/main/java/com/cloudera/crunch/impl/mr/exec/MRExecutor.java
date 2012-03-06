@@ -14,6 +14,7 @@
  */
 package com.cloudera.crunch.impl.mr.exec;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -28,17 +29,17 @@ import org.apache.hadoop.mapreduce.lib.jobcontrol.JobControl;
 public class MRExecutor {
 
   private static final Log LOG = LogFactory.getLog(MRExecutor.class);
-  
+
   private final JobControl control;
-  
+
   public MRExecutor(Class<?> jarClass) {
     this.control = new JobControl(jarClass.toString());
   }
-  
+
   public void addJob(CrunchJob job) {
     this.control.addJob(job);
   }
-  
+
   public void execute() {
     try {
       Thread controlThread = new Thread(control);
@@ -55,6 +56,16 @@ public class MRExecutor {
       System.err.println(failures.size() + " job failure(s) occurred:");
       for (ControlledJob job : failures) {
         System.err.println(job.getJobName() + "(" + job.getJobID() + "): " + job.getMessage());
+      }
+    } else {
+      for (ControlledJob controlledJob: this.control.getSuccessfulJobList()) {
+        if (controlledJob instanceof CrunchJob) {
+          try {
+            ((CrunchJob)controlledJob).handleMultiPaths();
+          } catch (IOException e) {
+            LOG.error("Failed to handle output paths for " + controlledJob + ":", e);
+          }
+        }
       }
     }
   }
